@@ -51,6 +51,16 @@ function verifyIfExissAccountCPF(request, response, next){
     return next() //Caso o processamento ocorra corretamente, ele dá continuidade pra função em que ele se encontra dentro
 }
 
+function getBalance(statement){
+    const balance = statement.reduce((acc, obj)=>{
+        if(obj.type === 'credit'){
+           return acc + obj.amount
+        }else{ return acc - obj.amount }
+    },0)
+
+    return balance
+
+}
 
 
 // app.use(verifyIfExissAccountCPF) //Escrevendo assim, todas as rotas a seguir precisam cumprir os requisitos do middleware para prosseguir
@@ -81,6 +91,35 @@ app.post("/deposit",verifyIfExissAccountCPF, (request, response)=>{
     return response.status(201).send()
 
 })
+
+
+
+
+//Inserindo um saque
+app.post("/withdraw",verifyIfExissAccountCPF, (request, response)=>{
+    const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
+
+    const {amount} = request.body
+
+    const balance = getBalance(costumer.statement)
+
+    if (balance < amount){
+        return response.status(400).json({error:'Insufficient funds!'})
+    }
+
+    const statementOperation ={
+        amount,
+        created_at: new Date(),
+        type: 'debit'
+    }
+
+    costumer.statement.push(statementOperation)
+
+    return response.status(201).send()
+
+})
+
+
 
 
 
