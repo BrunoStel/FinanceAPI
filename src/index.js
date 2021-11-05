@@ -1,3 +1,4 @@
+const { application } = require('express')
 const express  = require('express')
 
 const{ v4:uuidv4 } = require('uuid') //Gerar numeros randômicos de uuid
@@ -65,13 +66,6 @@ function getBalance(statement){
 
 // app.use(verifyIfExissAccountCPF) //Escrevendo assim, todas as rotas a seguir precisam cumprir os requisitos do middleware para prosseguir
 
-//Acessando o extrato bancário
-app.get('/statement',verifyIfExissAccountCPF, (request, response)=>{
-    const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
-    return response.json(costumer.statement)
-
-})
-
 
 //Inserindo um deposito
 app.post("/deposit",verifyIfExissAccountCPF, (request, response)=>{
@@ -119,6 +113,35 @@ app.post("/withdraw",verifyIfExissAccountCPF, (request, response)=>{
 
 })
 
+//Acessando o extrato bancário
+app.get('/statement',verifyIfExissAccountCPF, (request, response)=>{
+    const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
+
+    const balance = getBalance(costumer.statement)
+
+    return response.status(200).json({extrato:costumer.statement,Saldo:balance})
+})
+
+
+//Acessando o extrato bancário por data
+app.get('/statement/date',verifyIfExissAccountCPF, (request, response)=>{
+    const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
+
+    const {date} = request.query
+
+    const dateFormat = new Date(date + " 00:00") //Formatando a data
+
+    const statement = costumer.statement.filter(
+        (obj)=>
+         obj.created_at.toDateString() === 
+         new Date (dateFormat).toDateString()
+        )
+    if(statement === []){
+        return response.status(400).json({error:'Não há extratos para esse dia!'})
+    }
+
+    return response.status(200).json({extrato:statement})
+})
 
 
 
