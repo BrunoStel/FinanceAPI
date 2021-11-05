@@ -189,5 +189,6 @@ app.get('/balance',verifyIfExistAccountCPF,(request, response)=>{
     return response.status(201).json(balance)
 })
 
+//Correção de bugs!
 
 app.listen(3333) 
