@@ -38,7 +38,7 @@ app.post('/account', (request, response)=>{
 })
 
 // Criação do Middleware - Para validação de dados, verificação de tokens, etc
-function verifyIfExissAccountCPF(request, response, next){
+function verifyIfExistAccountCPF(request, response, next){
     const { cpf } = request.headers //Para buscar a informação do header
    
     const  costumer = costumers.find(costumer => costumer.cpf === cpf) //Retorna o objeto inteiro
@@ -52,6 +52,8 @@ function verifyIfExissAccountCPF(request, response, next){
     return next() //Caso o processamento ocorra corretamente, ele dá continuidade pra função em que ele se encontra dentro
 }
 
+
+//Criando a função que calcula o saldo da conta
 function getBalance(statement){
     const balance = statement.reduce((acc, obj)=>{
         if(obj.type === 'credit'){
@@ -68,7 +70,7 @@ function getBalance(statement){
 
 
 //Inserindo um deposito
-app.post("/deposit",verifyIfExissAccountCPF, (request, response)=>{
+app.post("/deposit",verifyIfExistAccountCPF, (request, response)=>{
     const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
 
     const {description, amount} = request.body
@@ -90,7 +92,7 @@ app.post("/deposit",verifyIfExissAccountCPF, (request, response)=>{
 
 
 //Inserindo um saque
-app.post("/withdraw",verifyIfExissAccountCPF, (request, response)=>{
+app.post("/withdraw",verifyIfExistAccountCPF, (request, response)=>{
     const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
 
     const {amount} = request.body
@@ -114,7 +116,7 @@ app.post("/withdraw",verifyIfExissAccountCPF, (request, response)=>{
 })
 
 //Acessando o extrato bancário
-app.get('/statement',verifyIfExissAccountCPF, (request, response)=>{
+app.get('/statement',verifyIfExistAccountCPF, (request, response)=>{
     const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
 
     const balance = getBalance(costumer.statement)
@@ -124,7 +126,7 @@ app.get('/statement',verifyIfExissAccountCPF, (request, response)=>{
 
 
 //Acessando o extrato bancário por data
-app.get('/statement/date',verifyIfExissAccountCPF, (request, response)=>{
+app.get('/statement/date',verifyIfExistAccountCPF, (request, response)=>{
     const {costumer} = request //Mesma coisa de fazer const costumer = request.costumer
 
     const {date} = request.query
@@ -136,16 +138,56 @@ app.get('/statement/date',verifyIfExissAccountCPF, (request, response)=>{
          obj.created_at.toDateString() === 
          new Date (dateFormat).toDateString()
         )
-    if(statement === []){
+
+    if(statement.length == 0 ){
         return response.status(400).json({error:'Não há extratos para esse dia!'})
     }
 
     return response.status(200).json({extrato:statement})
 })
 
+//Atualizando dados
+app.put('/account',verifyIfExistAccountCPF,(request, response)=>{
+    const {name} = request.body
+    const {costumer} = request
+
+    costumer.name = name
+
+    return response.status(201).send()
+})
+
+//Obtendo os dados da conta
+app.get('/account',verifyIfExistAccountCPF,(request, response)=>{
+    const {costumer} = request
 
 
+    return response.status(201).json(costumer)
+})
 
+//Deletando conta
+app.delete('/account',verifyIfExistAccountCPF,(request, response)=>{
+    const {costumer} = request
+
+    const { cpf } = request.headers;
+
+    const costumerIndex = costumers.findIndex(costumer => costumer.cpf === cpf)
+
+
+    costumers.splice(costumerIndex,1)
+
+    return response.status(200).json(costumers)
+})
+
+
+//Verificando o balanço
+app.get('/balance',verifyIfExistAccountCPF,(request, response)=>{
+    const {costumer} = request
+
+   const balance = getBalance(costumer.statement)
+
+
+    return response.status(201).json(balance)
+})
 
 
 app.listen(3333) 
